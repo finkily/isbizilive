@@ -144,6 +144,28 @@
   .cta.live:hover{ box-shadow: 0 14px 34px -6px rgba(56,226,189,0.4); }
   .cta svg{ width:15px; height:15px; }
 
+  .player-wrap{
+    margin-top: 22px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: max-height .45s ease, opacity .35s ease, transform .35s ease, margin-top .45s ease;
+  }
+  .player-wrap.show{
+    max-height: 260px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .player-wrap iframe{
+    display:block;
+    width: 100%;
+    height: 240px;
+    border: none;
+  }
+
   .meta{
     margin-top: 22px;
     font-family:'IBM Plex Mono', monospace;
@@ -412,6 +434,10 @@
     <span id="ctaText">Go to Twitch</span>
   </a>
 
+  <div class="player-wrap" id="playerWrap">
+    <div id="twitch-embed"></div>
+  </div>
+
   <p class="meta" id="meta">refreshes every 60s</p>
   <p class="clock" id="clock">--:--:--</p>
 </div>
@@ -463,9 +489,34 @@
   const cta = document.getElementById('cta');
   const ctaText = document.getElementById('ctaText');
   const meta = document.getElementById('meta');
+  const playerWrap = document.getElementById('playerWrap');
+  const embedContainer = document.getElementById('twitch-embed');
+
+  // If you add a custom domain later, add it here (or replace this entirely).
+  const PLAYER_PARENT = window.location.hostname;
+
+  let playerLoaded = false;
+  function showPlayer(){
+    if(!playerLoaded){
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://player.twitch.tv/?channel=${CHANNEL}&parent=${PLAYER_PARENT}&muted=true`;
+      iframe.allowFullscreen = true;
+      embedContainer.appendChild(iframe);
+      playerLoaded = true;
+    }
+    playerWrap.classList.add('show');
+  }
+  function hidePlayer(){
+    playerWrap.classList.remove('show');
+    if(playerLoaded){
+      embedContainer.innerHTML = '';
+      playerLoaded = false;
+    }
+  }
 
   function setLive(isLive){
     badge.classList.toggle('live', isLive);
+    if(isLive){ showPlayer(); } else { hidePlayer(); }
     if(isLive){
       heading.textContent = 'Is Bizi Live?';
       heading.className = 'live';
