@@ -158,9 +158,237 @@
   @media (prefers-reduced-motion: reduce){
     .badge.live .ring{ animation:none; }
   }
+
+  #fx-canvas{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+  }
+
+  .settings-btn{
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    width:46px;
+    height:46px;
+    border-radius:50%;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    z-index:5;
+    color: var(--text);
+    font-size:18px;
+    transition: transform .3s ease, background .2s ease;
+  }
+  .settings-btn:hover{ transform: rotate(45deg); }
+
+  .panel{
+    position:fixed;
+    bottom:76px;
+    right:20px;
+    width:270px;
+    max-width: calc(100vw - 40px);
+    background: rgba(23,18,43,0.85);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 18px;
+    padding: 22px;
+    z-index:5;
+    opacity:0;
+    transform: translateY(10px);
+    pointer-events:none;
+    transition: opacity .25s ease, transform .25s ease;
+  }
+  .panel.open{ opacity:1; transform:translateY(0); pointer-events:auto; }
+
+  .panel h3{
+    margin: 0 0 12px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--mute);
+  }
+
+  .seg{ display:flex; gap:6px; margin-bottom:18px; }
+  .seg button{
+    flex:1;
+    padding: 8px 0;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--mute);
+    font-family:'Sora', sans-serif;
+    font-size: 12px;
+    cursor:pointer;
+    transition: background .2s ease, color .2s ease, border-color .2s ease;
+  }
+  .seg button.active{ background: var(--off); color:#14102a; border-color: var(--off); }
+
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:16px;
+  }
+  .row label{ font-size:12px; color: var(--mute); }
+  .row input[type=range]{ flex:1; accent-color: var(--live); }
+  .row input[type=color]{
+    width:34px; height:26px; border:none; border-radius:6px;
+    background:none; padding:0; cursor:pointer;
+  }
+
+  .bg-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:10px;
+  }
+  .bg-swatch{ text-align:center; cursor:pointer; }
+  .bg-swatch .chip{
+    width:100%;
+    aspect-ratio:1;
+    border-radius:9px;
+    border: 1.5px solid transparent;
+    transition: border-color .2s ease, transform .15s ease;
+  }
+  .bg-swatch:hover .chip{ transform: scale(1.05); }
+  .bg-swatch.active .chip{ border-color: var(--live); }
+  .bg-swatch span{
+    display:block;
+    margin-top:5px;
+    font-size:9px;
+    color: var(--mute);
+    font-family:'IBM Plex Mono', monospace;
+    letter-spacing:.03em;
+  }
+
+  .islider-wrap{ margin-bottom:18px; }
+  .islider-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .islider-head label{ font-size:12px; color: var(--mute); }
+  .islider-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--live);
+    min-width: 28px;
+    text-align:right;
+    transition: color .2s ease;
+  }
+
+  .islider{
+    position:relative;
+    height: 30px;
+    display:flex;
+    align-items:center;
+    cursor:pointer;
+    touch-action:none;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  .islider:focus-visible .ithumb{
+    box-shadow: 0 0 0 3px rgba(56,226,189,0.45), 0 2px 8px rgba(0,0,0,.4);
+  }
+  .itrack{
+    position:relative;
+    width:100%;
+    height:6px;
+    border-radius:999px;
+    background: rgba(255,255,255,0.08);
+    overflow:visible;
+  }
+  .iticks{
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding: 0 1px;
+    pointer-events:none;
+  }
+  .iticks span{
+    width:2px; height:2px;
+    border-radius:50%;
+    background: rgba(255,255,255,0.18);
+  }
+  .ifill{
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:40%;
+    border-radius:999px;
+    background: linear-gradient(90deg, var(--off), var(--live));
+    transition: width .18s cubic-bezier(.22,1,.36,1);
+  }
+  .ithumb{
+    position:absolute;
+    top:50%;
+    left:40%;
+    width:18px; height:18px;
+    border-radius:50%;
+    background: var(--text);
+    box-shadow: 0 2px 8px rgba(0,0,0,.4), 0 0 0 4px rgba(56,226,189,0.12);
+    transform: translate(-50%,-50%);
+    transition: left .18s cubic-bezier(.22,1,.36,1), transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease;
+  }
+  .islider:hover .ithumb{ box-shadow: 0 2px 10px rgba(0,0,0,.45), 0 0 0 6px rgba(56,226,189,0.16); }
+  .islider.dragging .ifill,
+  .islider.dragging .ithumb{ transition: box-shadow .2s ease, transform .12s ease; }
+  .islider.dragging .ithumb{
+    transform: translate(-50%,-50%) scale(1.3);
+    box-shadow: 0 4px 16px rgba(0,0,0,.5), 0 0 0 9px rgba(56,226,189,0.22);
+  }
+  .islider.pop .ithumb{ animation: ithumb-pop .38s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes ithumb-pop{
+    0%{ transform: translate(-50%,-50%) scale(1.3); }
+    50%{ transform: translate(-50%,-50%) scale(0.88); }
+    100%{ transform: translate(-50%,-50%) scale(1); }
+  }
+
+  .itooltip{
+    position:absolute;
+    bottom: 24px;
+    left:40%;
+    transform: translateX(-50%) translateY(4px) scale(.85);
+    background: rgba(20,16,42,0.95);
+    border: 1px solid var(--glass-border);
+    padding: 3px 8px;
+    border-radius:6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color: var(--text);
+    opacity:0;
+    transition: left .18s cubic-bezier(.22,1,.36,1), opacity .15s ease, transform .15s ease;
+    pointer-events:none;
+    white-space:nowrap;
+  }
+  .islider:hover .itooltip,
+  .islider.dragging .itooltip{
+    opacity:1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  .islider.dragging .itooltip{ transition: opacity .15s ease, transform .15s ease; }
+
+  @media (prefers-reduced-motion: reduce){
+    .ifill, .ithumb, .itooltip{ transition-duration: .01s !important; }
+    .islider.pop .ithumb{ animation:none; }
+  }
+
 </style>
 </head>
 <body>
+
+<canvas id="fx-canvas"></canvas>
 
 <div class="card">
   <p class="eyebrow">twitch · bizi4l</p>
@@ -181,6 +409,43 @@
 
   <p class="meta" id="meta">refreshes every 60s</p>
   <p class="clock" id="clock">--:--:--</p>
+</div>
+
+<button class="settings-btn" id="settingsBtn" title="Appearance settings" aria-label="Appearance settings">✦</button>
+
+<div class="panel" id="panel">
+  <h3>Effect</h3>
+  <div class="seg" id="effectSeg">
+    <button data-effect="none">None</button>
+    <button data-effect="dots">Dots</button>
+    <button data-effect="rain">Rain</button>
+  </div>
+
+  <div class="row">
+    <label for="fxColor">Colour</label>
+    <input type="color" id="fxColor" value="#38e2bd">
+  </div>
+
+  <div class="islider-wrap">
+    <div class="islider-head">
+      <label>Intensity</label>
+      <span class="islider-value" id="islValue">40</span>
+    </div>
+    <div class="islider" id="islider" tabindex="0" role="slider" aria-label="Intensity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40">
+      <div class="itrack">
+        <div class="iticks">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="ifill" id="islFill"></div>
+      </div>
+      <div class="ithumb" id="islThumb"></div>
+      <div class="itooltip" id="islTooltip">40</div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:22px;">Background</h3>
+  <div class="bg-grid" id="bgGrid"></div>
 </div>
 
 <script>
@@ -231,6 +496,217 @@
 
   checkStatus();
   setInterval(checkStatus, POLL_MS);
+
+  const bgPresets = [
+    { name: "Default", css: "radial-gradient(1100px 700px at 15% -10%, rgba(120,90,220,0.35), transparent 60%), radial-gradient(900px 600px at 110% 110%, rgba(56,226,189,0.12), transparent 55%), linear-gradient(160deg, #17122b, #2a1a4d)" },
+    { name: "Aurora",  css: "radial-gradient(1000px 650px at 20% -10%, rgba(56,226,189,0.30), transparent 60%), radial-gradient(900px 600px at 100% 100%, rgba(90,140,255,0.20), transparent 55%), linear-gradient(160deg, #0d1f24, #123a3a)" },
+    { name: "Ember",   css: "radial-gradient(1000px 650px at 15% -10%, rgba(255,120,90,0.28), transparent 60%), radial-gradient(900px 600px at 110% 110%, rgba(230,80,140,0.16), transparent 55%), linear-gradient(160deg, #241226, #3d1a2a)" },
+    { name: "Violet",  css: "radial-gradient(1000px 650px at 15% -10%, rgba(180,80,230,0.32), transparent 60%), radial-gradient(900px 600px at 110% 110%, rgba(120,60,220,0.18), transparent 55%), linear-gradient(160deg, #1a1030, #35155a)" },
+    { name: "Midnight",css: "radial-gradient(1000px 650px at 15% -10%, rgba(70,120,255,0.28), transparent 60%), radial-gradient(900px 600px at 110% 110%, rgba(56,226,189,0.14), transparent 55%), linear-gradient(160deg, #0b1226, #142449)" },
+    { name: "Rose",    css: "radial-gradient(1000px 650px at 15% -10%, rgba(255,110,170,0.28), transparent 60%), radial-gradient(900px 600px at 110% 110%, rgba(255,180,90,0.14), transparent 55%), linear-gradient(160deg, #240f22, #401a3a)" }
+  ];
+
+  function applyBackground(name){
+    const preset = bgPresets.find(p => p.name === name) || bgPresets[0];
+    document.body.style.background = preset.css;
+    document.body.style.backgroundAttachment = 'fixed';
+  }
+
+  const bgGrid = document.getElementById('bgGrid');
+  bgPresets.forEach(preset => {
+    const el = document.createElement('div');
+    el.className = 'bg-swatch';
+    el.dataset.name = preset.name;
+    el.innerHTML = `<div class="chip" style="background:${preset.css}"></div><span>${preset.name}</span>`;
+    el.addEventListener('click', () => {
+      applyBackground(preset.name);
+      document.querySelectorAll('.bg-swatch').forEach(s => s.classList.remove('active'));
+      el.classList.add('active');
+      localStorage.setItem('bizi4l-bg', preset.name);
+    });
+    bgGrid.appendChild(el);
+  });
+
+  const canvas = document.getElementById('fx-canvas');
+  const ctx = canvas.getContext('2d');
+  function resizeCanvas(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  const fx = { effect: 'none', color: '#38e2bd', intensity: 40 };
+  let particles = [];
+
+  function hexToRgb(hex){
+    const m = hex.replace('#','').match(/.{1,2}/g);
+    return m.map(h => parseInt(h, 16));
+  }
+
+  function spawnParticle(randomY){
+    if(fx.effect === 'rain'){
+      return {
+        x: Math.random() * canvas.width,
+        y: randomY ? Math.random() * canvas.height : -20,
+        len: 10 + Math.random() * 14,
+        speed: 3 + Math.random() * 3,
+        opacity: 0.2 + Math.random() * 0.4
+      };
+    }
+    return {
+      x: Math.random() * canvas.width,
+      y: randomY ? Math.random() * canvas.height : -10,
+      r: 1 + Math.random() * 2.2,
+      speed: 0.4 + Math.random() * 1.1,
+      drift: (Math.random() - 0.5) * 0.6,
+      opacity: 0.3 + Math.random() * 0.6
+    };
+  }
+
+  function makeParticles(){
+    const base = Number(fx.intensity);
+    const count = Math.round(fx.effect === 'rain' ? base * 1.5 : base);
+    particles = Array.from({ length: count }, () => spawnParticle(true));
+  }
+
+  function animate(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if(fx.effect !== 'none'){
+      const [r, g, b] = hexToRgb(fx.color);
+      particles.forEach(p => {
+        if(fx.effect === 'rain'){
+          ctx.strokeStyle = `rgba(${r},${g},${b},${p.opacity})`;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x - 2, p.y + p.len);
+          ctx.stroke();
+          p.y += p.speed;
+          p.x -= 0.6;
+          if(p.y > canvas.height){ p.y = -20; p.x = Math.random() * canvas.width; }
+        } else {
+          ctx.fillStyle = `rgba(${r},${g},${b},${p.opacity})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          p.y += p.speed;
+          p.x += p.drift;
+          if(p.y > canvas.height + 10){ p.y = -10; p.x = Math.random() * canvas.width; }
+        }
+      });
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  const settingsBtn = document.getElementById('settingsBtn');
+  const panel = document.getElementById('panel');
+  settingsBtn.addEventListener('click', () => panel.classList.toggle('open'));
+  document.addEventListener('click', (e) => {
+    if(!panel.contains(e.target) && e.target !== settingsBtn && panel.classList.contains('open')){
+      panel.classList.remove('open');
+    }
+  });
+
+  const effectSeg = document.getElementById('effectSeg');
+  const fxColorInput = document.getElementById('fxColor');
+
+  effectSeg.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      fx.effect = btn.dataset.effect;
+      effectSeg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      makeParticles();
+      localStorage.setItem('bizi4l-effect', fx.effect);
+    });
+  });
+
+  fxColorInput.addEventListener('input', () => {
+    fx.color = fxColorInput.value;
+    localStorage.setItem('bizi4l-color', fx.color);
+  });
+
+  const islider = document.getElementById('islider');
+  const islFill = document.getElementById('islFill');
+  const islThumb = document.getElementById('islThumb');
+  const islTooltip = document.getElementById('islTooltip');
+  const islValue = document.getElementById('islValue');
+
+  function setIntensityUI(val, animatePop){
+    const pct = Math.max(0, Math.min(100, val));
+    islFill.style.width = pct + '%';
+    islThumb.style.left = pct + '%';
+    islTooltip.style.left = pct + '%';
+    islTooltip.textContent = Math.round(pct);
+    islValue.textContent = Math.round(pct);
+    islider.setAttribute('aria-valuenow', Math.round(pct));
+    if(animatePop){
+      islider.classList.remove('pop');
+      void islider.offsetWidth; // restart animation
+      islider.classList.add('pop');
+    }
+  }
+
+  function commitIntensity(val, animatePop){
+    fx.intensity = Math.round(val);
+    setIntensityUI(fx.intensity, animatePop);
+    makeParticles();
+    localStorage.setItem('bizi4l-intensity', fx.intensity);
+  }
+
+  function valueFromClientX(clientX){
+    const rect = islider.getBoundingClientRect();
+    const ratio = (clientX - rect.left) / rect.width;
+    return Math.max(0, Math.min(100, ratio * 100));
+  }
+
+  let dragging = false;
+
+  islider.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    islider.classList.add('dragging');
+    islider.setPointerCapture(e.pointerId);
+    commitIntensity(valueFromClientX(e.clientX), false);
+  });
+  islider.addEventListener('pointermove', (e) => {
+    if(!dragging) return;
+    commitIntensity(valueFromClientX(e.clientX), false);
+  });
+  function endDrag(e){
+    if(!dragging) return;
+    dragging = false;
+    islider.classList.remove('dragging');
+    setIntensityUI(fx.intensity, true);
+  }
+  islider.addEventListener('pointerup', endDrag);
+  islider.addEventListener('pointercancel', endDrag);
+
+  islider.addEventListener('keydown', (e) => {
+    const step = e.shiftKey ? 10 : 2;
+    if(e.key === 'ArrowRight' || e.key === 'ArrowUp'){ commitIntensity(fx.intensity + step, true); e.preventDefault(); }
+    if(e.key === 'ArrowLeft' || e.key === 'ArrowDown'){ commitIntensity(fx.intensity - step, true); e.preventDefault(); }
+    if(e.key === 'Home'){ commitIntensity(0, true); e.preventDefault(); }
+    if(e.key === 'End'){ commitIntensity(100, true); e.preventDefault(); }
+  });
+
+  (function loadPrefs(){
+    const savedEffect = localStorage.getItem('bizi4l-effect') || 'none';
+    const savedColor = localStorage.getItem('bizi4l-color') || '#38e2bd';
+    const savedIntensity = localStorage.getItem('bizi4l-intensity') || '40';
+    const savedBg = localStorage.getItem('bizi4l-bg') || 'Default';
+
+    fx.effect = savedEffect;
+    fx.color = savedColor;
+    fx.intensity = Number(savedIntensity);
+
+    fxColorInput.value = savedColor;
+    setIntensityUI(fx.intensity, false);
+    effectSeg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.effect === savedEffect));
+
+    applyBackground(savedBg);
+    document.querySelectorAll('.bg-swatch').forEach(s => s.classList.toggle('active', s.dataset.name === savedBg));
+
+    makeParticles();
+  })();
+
 </script>
 
 </body>
