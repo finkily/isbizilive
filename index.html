@@ -182,6 +182,82 @@
     color: var(--mute);
   }
 
+  /* --- Last live counter --- */
+  .last-live{
+    position: relative;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 16px auto 0;
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--glass-border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--mute);
+    cursor: default;
+    width: fit-content;
+    transition: background .2s ease, border-color .2s ease;
+  }
+  .last-live.show{ display: inline-flex; }
+  .last-live:hover{
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.2);
+  }
+  .last-live.is-live{
+    color: var(--live);
+    background: rgba(56,226,189,0.08);
+    border-color: rgba(56,226,189,0.32);
+    transition: background .3s ease, border-color .3s ease, color .3s ease;
+  }
+  .last-live.is-live:hover{
+    background: rgba(56,226,189,0.13);
+    border-color: rgba(56,226,189,0.45);
+  }
+  .ll-dot{
+    width:6px; height:6px; flex:0 0 auto;
+    border-radius:50%;
+    background: var(--off);
+    box-shadow: 0 0 6px 1px var(--off-dim);
+    transition: background .3s ease, box-shadow .3s ease;
+  }
+  .last-live.is-live .ll-dot{
+    background: var(--live);
+    box-shadow: 0 0 6px 1px var(--live-dim);
+  }
+  .ll-counter{
+    color: var(--text);
+    font-weight:500;
+    letter-spacing: .02em;
+  }
+
+  .ll-tooltip{
+    position:absolute;
+    bottom: calc(100% + 10px);
+    left:50%;
+    transform: translateX(-50%) translateY(4px);
+    background: rgba(20,16,42,0.96);
+    border: 1px solid var(--glass-border);
+    padding: 7px 13px;
+    border-radius:9px;
+    font-size:11px;
+    letter-spacing: .03em;
+    color: var(--text);
+    white-space:nowrap;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .18s ease, transform .18s ease;
+    box-shadow: 0 10px 26px -8px rgba(0,0,0,.55);
+    z-index: 2;
+  }
+  .last-live:hover .ll-tooltip,
+  .last-live:focus-visible .ll-tooltip{
+    opacity:1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   @media (prefers-reduced-motion: reduce){
     .badge.live .ring{ animation:none; }
   }
@@ -438,6 +514,13 @@
     <div id="twitch-embed"></div>
   </div>
 
+  <div class="last-live" id="lastLive" tabindex="0">
+    <span class="ll-dot"></span>
+    <span class="ll-text" id="llLabel">last live</span>
+    <span class="ll-counter" id="llCounter">—</span>
+    <div class="ll-tooltip" id="llTooltip">—</div>
+  </div>
+
   <p class="meta" id="meta">refreshes every 60s</p>
   <p class="clock" id="clock">--:--:--</p>
 </div>
@@ -482,6 +565,7 @@
 <script>
   const CHANNEL = "bizi4l";
   const POLL_MS = 60000;
+  const LAST_LIVE_KEY = 'bizi4l-last-live-ts';
 
   const badge = document.getElementById('badge');
   const heading = document.getElementById('heading');
@@ -491,6 +575,11 @@
   const meta = document.getElementById('meta');
   const playerWrap = document.getElementById('playerWrap');
   const embedContainer = document.getElementById('twitch-embed');
+
+  const lastLiveEl = document.getElementById('lastLive');
+  const llLabel = document.getElementById('llLabel');
+  const llCounter = document.getElementById('llCounter');
+  const llTooltip = document.getElementById('llTooltip');
 
   // If you add a custom domain later, add it here (or replace this entirely).
   const PLAYER_PARENT = window.location.hostname;
@@ -514,32 +603,146 @@
     }
   }
 
+  // ---- Last live tracking ----
+  // Stores the last moment we confirmed the channel was live. While the
+  // channel is live this timestamp keeps refreshing on every poll; once it
+  // goes offline the value freezes and the counter starts climbing from there.
+  let lastLiveTimestamp = Number(localStorage.getItem(LAST_LIVE_KEY)) || null;
+
+  function pad(n){ return String(n).padStart(2, '0'); }
+
+  function formatDuration(ms){
+    if(ms < 0) ms = 0;
+    let totalSeconds = Math.floor(ms / 1000);
+    const days = Math.floor(totalSeconds / 86400); totalSeconds -= days * 86400;
+    const hours = Math.floor(totalSeconds / 3600); totalSeconds -= hours * 3600;
+    const minutes = Math.floor(totalSeconds / 60); totalSeconds -= minutes * 60;
+    const seconds = totalSeconds;
+
+    const parts = [];
+    if(days > 0) parts.push(`${days}d`);
+    parts.push(`${pad(hours)}h`);
+    parts.push(`${pad(minutes)}m`);
+    parts.push(`${pad(seconds)}s`);
+    return parts.join(' ');
+  }
+
+  function updateLastLiveDisplay(){
+    lastLiveEl.classList.add('show');
+
+    if(!lastLiveTimestamp){
+      // Twitch had no record for this channel (very new / never streamed),
+      // or we genuinely couldn't reach any data source yet.
+      llLabel.textContent = 'no data yet';
+      llCounter.textContent = '';
+      llTooltip.textContent = "Couldn't find a previous broadcast for bizi4l yet.";
+      return;
+    }
+
+    llLabel.textContent = 'last live';
+    llCounter.textContent = formatDuration(Date.now() - lastLiveTimestamp) + ' ago';
+    const d = new Date(lastLiveTimestamp);
+    llTooltip.textContent = 'Last live: ' + d.toLocaleString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    }) + ' (your local time)';
+  }
+
+  function markLive(){
+    lastLiveTimestamp = Date.now();
+    localStorage.setItem(LAST_LIVE_KEY, String(lastLiveTimestamp));
+  }
+
+  function markLastBroadcast(ts){
+    lastLiveTimestamp = ts;
+    localStorage.setItem(LAST_LIVE_KEY, String(lastLiveTimestamp));
+  }
+
   function setLive(isLive){
     badge.classList.toggle('live', isLive);
-    if(isLive){ showPlayer(); } else { hidePlayer(); }
+    lastLiveEl.classList.toggle('is-live', isLive);
+    if(isLive){ showPlayer(); markLive(); } else { hidePlayer(); }
+
     if(isLive){
       heading.textContent = 'Is Bizi Live?';
       heading.className = 'live';
       sub.textContent = "Bizi is live right now, come say hi!";
       cta.classList.add('live');
       ctaText.textContent = 'Watch Live';
+      llLabel.textContent = 'currently live';
+      llCounter.textContent = '';
+      lastLiveEl.classList.add('show');
+      llTooltip.textContent = "He's live right now — go say hi!";
     } else {
       heading.textContent = 'Is Bizi Live?';
       heading.className = 'off';
       sub.textContent = "Bizi is not live at the moment. Follow so you can catch the next stream.";
       cta.classList.remove('live');
       ctaText.textContent = 'Go to Twitch';
+      updateLastLiveDisplay();
     }
     meta.textContent = 'last checked ' + new Date().toLocaleTimeString();
   }
 
+  // ---- Primary status source: Twitch's own (public, unauthenticated)
+  // GraphQL endpoint, using the Client-ID Twitch's own website uses. This
+  // gives us the *real* last-broadcast time straight from Twitch, not just
+  // "since this browser last checked".
+  const TWITCH_GQL_CLIENT_ID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
+
+  async function checkStatusViaTwitch(){
+    const res = await fetch('https://gql.twitch.tv/gql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Client-ID': TWITCH_GQL_CLIENT_ID
+      },
+      body: JSON.stringify({
+        query: `query { user(login: "${CHANNEL}") { stream { createdAt } lastBroadcast { startedAt } } }`
+      })
+    });
+    if(!res.ok) throw new Error('Twitch GQL bad response: ' + res.status);
+    const json = await res.json();
+    if(json.errors) throw new Error('Twitch GQL errors: ' + JSON.stringify(json.errors));
+    const user = json && json.data && json.data.user;
+    if(!user) throw new Error('Twitch GQL returned no user for login "' + CHANNEL + '"');
+
+    if(user.stream && user.stream.createdAt){
+      setLive(true);
+      return;
+    }
+
+    if(user.lastBroadcast && user.lastBroadcast.startedAt){
+      markLastBroadcast(new Date(user.lastBroadcast.startedAt).getTime());
+    } else {
+      console.warn('[bizi4l] Twitch GQL responded but had no lastBroadcast data:', user);
+    }
+    setLive(false);
+  }
+
+  // ---- Fallback status source: decapi.me's uptime check. Doesn't know the
+  // real last-broadcast time, only whatever this browser has personally
+  // observed and stored locally.
+  async function checkStatusViaDecapi(){
+    const res = await fetch(`https://decapi.me/twitch/uptime/${CHANNEL}`, { cache: "no-store" });
+    const text = (await res.text()).trim().toLowerCase();
+    setLive(!text.includes('offline'));
+  }
+
   async function checkStatus(){
     try{
-      const res = await fetch(`https://decapi.me/twitch/uptime/${CHANNEL}`, { cache: "no-store" });
-      const text = (await res.text()).trim().toLowerCase();
-      setLive(!text.includes('offline'));
+      await checkStatusViaTwitch();
     } catch (err){
-      sub.textContent = "Couldn't reach the signal check — retrying shortly…";
+      console.error('[bizi4l] Twitch GQL check failed, falling back to decapi.me:', err);
+      try{
+        await checkStatusViaDecapi();
+      } catch (err2){
+        console.error('[bizi4l] decapi.me fallback also failed:', err2);
+        sub.textContent = "Couldn't reach the signal check — retrying shortly…";
+      }
     }
   }
 
@@ -549,6 +752,8 @@
   }
   updateClock();
   setInterval(updateClock, 1000);
+  setInterval(updateLastLiveDisplay, 1000);
+  updateLastLiveDisplay();
 
   checkStatus();
   setInterval(checkStatus, POLL_MS);
