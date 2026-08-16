@@ -258,6 +258,55 @@
     transform: translateX(-50%) translateY(0);
   }
 
+  /* --- Site view counter (guns.lol style eye badge), pinned bottom-left --- */
+  .view-counter{
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: rgba(23,18,43,0.75);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.14);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text);
+    cursor: default;
+    width: fit-content;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: background .2s ease, border-color .2s ease, opacity .3s ease, transform .3s ease;
+    z-index: 5;
+  }
+  .view-counter.show{ opacity: 1; transform: translateY(0); }
+  .view-counter:hover{
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.28);
+  }
+  .vc-eye{
+    color: var(--text);
+    flex: 0 0 auto;
+    display: block;
+  }
+  .vc-eye .pupil{ transition: r .2s ease; }
+  .vc-count{
+    color: var(--text);
+    font-weight: 500;
+    letter-spacing: .02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .view-counter.pulse .vc-count{ animation: vc-pop .35s ease; }
+  @keyframes vc-pop{
+    0%{ transform: scale(1); }
+    40%{ transform: scale(1.18); }
+    100%{ transform: scale(1); }
+  }
+
   @media (prefers-reduced-motion: reduce){
     .badge.live .ring{ animation:none; }
   }
@@ -525,6 +574,15 @@
   <p class="clock" id="clock">--:--:--</p>
 </div>
 
+<div class="view-counter" id="viewCounter" tabindex="0">
+  <svg class="vc-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7-11-7-11-7z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle class="pupil" cx="12" cy="12" r="3.1" fill="currentColor"/>
+  </svg>
+  <span class="vc-count" id="vcCount">—</span>
+  <div class="ll-tooltip" id="vcTooltip">Loading views…</div>
+</div>
+
 <button class="settings-btn" id="settingsBtn" title="Appearance settings" aria-label="Appearance settings">✦</button>
 
 <div class="panel" id="panel">
@@ -745,6 +803,91 @@
       }
     }
   }
+
+  // ---- Site view counter ----
+  // Uses a free, no-signup hit-counter API to track total page views across
+  // everyone who visits, with an "anti-refresh" window so one person mashing
+  // refresh (or reopening the tab) doesn't rack the number up on their own.
+  //
+  // How the anti-refresh gate works:
+  //   - The first time a browser loads the page (or the last time it counted
+  //     has aged past VIEW_WINDOW_MS), we call the "hit" endpoint, which
+  //     increments the shared counter by 1 and returns the new total.
+  //   - Any reload/refresh inside that window just re-reads the current
+  //     total (via the "get" endpoint, which does NOT increment) so the
+  //     number on screen stays accurate without adding extra views.
+  //   - The timestamp is stored in localStorage, so it survives refreshes
+  //     and persists until the browser storage is cleared.
+  //
+  // NOTE: counter keys on this free service are public/shared by key name,
+  // so VIEW_COUNTER_KEY should stay something unlikely to collide with
+  // anyone else's counter. Change it if you fork this page.
+  const VIEW_COUNTER_KEY = 'is-bizi-live-bizi4l-pageviews-v1';
+  const VIEW_WINDOW_MS = 30 * 60 * 1000; // 30 minutes between counted views per browser
+  const VIEW_LAST_TS_KEY = 'bizi4l-view-last-ts';
+  const VIEW_CACHE_KEY = 'bizi4l-view-cache';
+  const COUNTER_BASE = 'https://countapi.mileshilliard.com/api/v1';
+
+  const viewCounterEl = document.getElementById('viewCounter');
+  const vcCount = document.getElementById('vcCount');
+  const vcTooltip = document.getElementById('vcTooltip');
+
+  function formatViewCount(n){
+    if(typeof n !== 'number' || isNaN(n)) return '—';
+    try{
+      return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+    } catch(e){
+      return n.toLocaleString();
+    }
+  }
+
+  function renderViewCount(n, { pulse } = {}){
+    vcCount.textContent = formatViewCount(n);
+    vcTooltip.textContent = n.toLocaleString() + ' total view' + (n === 1 ? '' : 's') + ' · counted once per visit';
+    viewCounterEl.classList.add('show');
+    if(pulse){
+      viewCounterEl.classList.remove('pulse');
+      void viewCounterEl.offsetWidth; // restart animation
+      viewCounterEl.classList.add('pulse');
+    }
+  }
+
+  async function initViewCounter(){
+    const lastTs = Number(localStorage.getItem(VIEW_LAST_TS_KEY)) || 0;
+    const cached = Number(localStorage.getItem(VIEW_CACHE_KEY)) || null;
+    const isNewView = !lastTs || (Date.now() - lastTs) > VIEW_WINDOW_MS;
+
+    // Show a cached number immediately if we have one, so the badge doesn't
+    // sit empty while the network request is in flight.
+    if(cached) renderViewCount(cached);
+
+    try{
+      if(isNewView){
+        const res = await fetch(`${COUNTER_BASE}/hit/${VIEW_COUNTER_KEY}`, { cache: 'no-store' });
+        if(!res.ok) throw new Error('hit endpoint bad response: ' + res.status);
+        const data = await res.json();
+        localStorage.setItem(VIEW_LAST_TS_KEY, String(Date.now()));
+        localStorage.setItem(VIEW_CACHE_KEY, String(data.value));
+        renderViewCount(data.value, { pulse: true });
+      } else {
+        const res = await fetch(`${COUNTER_BASE}/get/${VIEW_COUNTER_KEY}`, { cache: 'no-store' });
+        if(!res.ok) throw new Error('get endpoint bad response: ' + res.status);
+        const data = await res.json();
+        localStorage.setItem(VIEW_CACHE_KEY, String(data.value));
+        renderViewCount(data.value);
+      }
+    } catch(err){
+      console.error('[bizi4l] view counter failed:', err);
+      if(cached){
+        // We already rendered the cached value above; just note it's stale.
+        vcTooltip.textContent = cached.toLocaleString() + ' views (last known — live count unavailable)';
+      } else {
+        viewCounterEl.classList.remove('show');
+      }
+    }
+  }
+
+  initViewCounter();
 
   const clock = document.getElementById('clock');
   function updateClock(){
