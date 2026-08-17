@@ -3,12 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Is Bizi Live?</title>
+<title>Is Bizi Live? | bizi4l Twitch Status</title>
+<meta name="description" content="Live status tracker for bizi4l on Twitch. Check instantly if bizi4l is streaming right now.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://finkily.github.io/isbizilive/">
 <link rel="icon" type="image/png" href="https://cdn.discordapp.com/guilds/1261689619322372199/users/593921296224747521/avatars/5f5bf02c4bae4e55c0ad12d2c5051528.png?size=1024">
+
+<meta property="og:type" content="website">
 <meta property="og:title" content="Is Bizi Live?">
 <meta property="og:description" content="Check if bizi4l is currently live on Twitch.">
 <meta property="og:image" content="https://cdn.discordapp.com/guilds/1261689619322372199/users/593921296224747521/avatars/5f5bf02c4bae4e55c0ad12d2c5051528.png?size=1024">
+<meta property="og:url" content="https://finkily.github.io/isbizilive/">
 <meta name="theme-color" content="#38e2bd">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Is Bizi Live?">
+<meta name="twitter:description" content="Check if bizi4l is currently live on Twitch.">
+<meta name="twitter:image" content="https://cdn.discordapp.com/guilds/1261689619322372199/users/593921296224747521/avatars/5f5bf02c4bae4e55c0ad12d2c5051528.png?size=1024">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Sora:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -182,7 +194,6 @@
     color: var(--mute);
   }
 
-  /* --- Last live counter --- */
   .last-live{
     position: relative;
     display: none;
@@ -258,7 +269,6 @@
     transform: translateX(-50%) translateY(0);
   }
 
-  /* --- Site view counter (guns.lol style eye badge), pinned bottom-left --- */
   .view-counter{
     position: fixed;
     left: 20px;
@@ -639,7 +649,6 @@
   const llCounter = document.getElementById('llCounter');
   const llTooltip = document.getElementById('llTooltip');
 
-  // If you add a custom domain later, add it here (or replace this entirely).
   const PLAYER_PARENT = window.location.hostname;
 
   let playerLoaded = false;
@@ -661,10 +670,6 @@
     }
   }
 
-  // ---- Last live tracking ----
-  // Stores the last moment we confirmed the channel was live. While the
-  // channel is live this timestamp keeps refreshing on every poll; once it
-  // goes offline the value freezes and the counter starts climbing from there.
   let lastLiveTimestamp = Number(localStorage.getItem(LAST_LIVE_KEY)) || null;
 
   function pad(n){ return String(n).padStart(2, '0'); }
@@ -689,8 +694,6 @@
     lastLiveEl.classList.add('show');
 
     if(!lastLiveTimestamp){
-      // Twitch had no record for this channel (very new / never streamed),
-      // or we genuinely couldn't reach any data source yet.
       llLabel.textContent = 'no data yet';
       llCounter.textContent = '';
       llTooltip.textContent = "Couldn't find a previous broadcast for bizi4l yet.";
@@ -745,10 +748,6 @@
     meta.textContent = 'last checked ' + new Date().toLocaleTimeString();
   }
 
-  // ---- Primary status source: Twitch's own (public, unauthenticated)
-  // GraphQL endpoint, using the Client-ID Twitch's own website uses. This
-  // gives us the *real* last-broadcast time straight from Twitch, not just
-  // "since this browser last checked".
   const TWITCH_GQL_CLIENT_ID = 'kimne78kx3ncx6brgo4mv6wki5h1ko';
 
   async function checkStatusViaTwitch(){
@@ -781,9 +780,6 @@
     setLive(false);
   }
 
-  // ---- Fallback status source: decapi.me's uptime check. Doesn't know the
-  // real last-broadcast time, only whatever this browser has personally
-  // observed and stored locally.
   async function checkStatusViaDecapi(){
     const res = await fetch(`https://decapi.me/twitch/uptime/${CHANNEL}`, { cache: "no-store" });
     const text = (await res.text()).trim().toLowerCase();
@@ -804,26 +800,8 @@
     }
   }
 
-  // ---- Site view counter ----
-  // Uses a free, no-signup hit-counter API to track total page views across
-  // everyone who visits, with an "anti-refresh" window so one person mashing
-  // refresh (or reopening the tab) doesn't rack the number up on their own.
-  //
-  // How the anti-refresh gate works:
-  //   - The first time a browser loads the page (or the last time it counted
-  //     has aged past VIEW_WINDOW_MS), we call the "hit" endpoint, which
-  //     increments the shared counter by 1 and returns the new total.
-  //   - Any reload/refresh inside that window just re-reads the current
-  //     total (via the "get" endpoint, which does NOT increment) so the
-  //     number on screen stays accurate without adding extra views.
-  //   - The timestamp is stored in localStorage, so it survives refreshes
-  //     and persists until the browser storage is cleared.
-  //
-  // NOTE: counter keys on this free service are public/shared by key name,
-  // so VIEW_COUNTER_KEY should stay something unlikely to collide with
-  // anyone else's counter. Change it if you fork this page.
   const VIEW_COUNTER_KEY = 'is-bizi-live-bizi4l-pageviews-v1';
-  const VIEW_WINDOW_MS = 30 * 60 * 1000; // 30 minutes between counted views per browser
+  const VIEW_WINDOW_MS = 30 * 60 * 1000;
   const VIEW_LAST_TS_KEY = 'bizi4l-view-last-ts';
   const VIEW_CACHE_KEY = 'bizi4l-view-cache';
   const COUNTER_BASE = 'https://countapi.mileshilliard.com/api/v1';
@@ -847,7 +825,7 @@
     viewCounterEl.classList.add('show');
     if(pulse){
       viewCounterEl.classList.remove('pulse');
-      void viewCounterEl.offsetWidth; // restart animation
+      void viewCounterEl.offsetWidth;
       viewCounterEl.classList.add('pulse');
     }
   }
@@ -857,8 +835,6 @@
     const cached = Number(localStorage.getItem(VIEW_CACHE_KEY)) || null;
     const isNewView = !lastTs || (Date.now() - lastTs) > VIEW_WINDOW_MS;
 
-    // Show a cached number immediately if we have one, so the badge doesn't
-    // sit empty while the network request is in flight.
     if(cached) renderViewCount(cached);
 
     try{
@@ -879,7 +855,6 @@
     } catch(err){
       console.error('[bizi4l] view counter failed:', err);
       if(cached){
-        // We already rendered the cached value above; just note it's stale.
         vcTooltip.textContent = cached.toLocaleString() + ' views (last known — live count unavailable)';
       } else {
         viewCounterEl.classList.remove('show');
@@ -1044,7 +1019,7 @@
     islider.setAttribute('aria-valuenow', Math.round(pct));
     if(animatePop){
       islider.classList.remove('pop');
-      void islider.offsetWidth; // restart animation
+      void islider.offsetWidth;
       islider.classList.add('pop');
     }
   }
